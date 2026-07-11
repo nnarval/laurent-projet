@@ -1,9 +1,4 @@
-import {
-  catalogue,
-  normaliser,
-  produitsDuFournisseur,
-  type Produit,
-} from "./catalogue";
+import { catalogue, normaliser, type Produit } from "./catalogue";
 import {
   comparerLigne,
   synthetiser,
@@ -56,6 +51,57 @@ export function detecterFournisseur(nom: string | null): string | null {
   return meilleur;
 }
 
+/** Mots parasites à ignorer dans les libellés (unités, conditionnements, marques génériques). */
+const MOTS_BRUIT = new Set([
+  "kg", "g", "cl", "l", "ml", "gr", "x", "ue", "bte", "pce", "abc", "crf", "ivc", "edt",
+]);
+
+/** Vrai si le mot est du bruit (nombre, mesure, code de conditionnement). */
+function estBruit(m: string): boolean {
+  if (/^\d+([.,]\d+)?$/.test(m)) return true; // nombre pur
+  if (/^\d*(kg|g|cl|l|ml|gr)$/.test(m)) return true; // mesure : 370g, 70cl…
+  if (/^x?\d+$/.test(m)) return true; // x2, x8
+  return MOTS_BRUIT.has(m);
+}
+
+/** Découpe un libellé en mots significatifs (≥3 lettres, hors bruit). */
+function motsSignificatifs(texte: string): string[] {
+  return normaliser(texte)
+    .split(/[^a-z0-9]+/)
+    .filter((m) => m.length >= 3 && !estBruit(m));
+}
+
+/** Deux mots correspondent s'ils sont identiques ou partagent un préfixe long (≥5). */
+function tokenCorrespond(a: string, b: string): boolean {
+  if (a === b) return true;
+  const n = Math.min(a.length, b.length);
+  return n >= 5 && (a.startsWith(b) || b.startsWith(a));
+}
+
+/** Score de similarité (coefficient de Dice) entre deux listes de mots. */
+function scoreMots(q: string[], c: string[]): number {
+  if (q.length === 0 || c.length === 0) return 0;
+  const utilise = new Array(c.length).fill(false);
+  let inter = 0;
+  for (const x of q) {
+    for (let j = 0; j < c.length; j++) {
+      if (!utilise[j] && tokenCorrespond(x, c[j])) {
+        inter++;
+        utilise[j] = true;
+        break;
+      }
+    }
+  }
+  return (2 * inter) / (q.length + c.length);
+}
+
+/** Seuil minimal de similarité pour accepter un rapprochement par nom. */
+const SEUIL_NOM = 0.34;
+
+/** Mots significatifs pré-calculés pour chaque produit du catalogue. */
+const MOTS_CATALOGUE: { produit: Produit; mots: string[] }[] =
+  catalogue.produits.map((p) => ({ produit: p, mots: motsSignificatifs(p.nom) }));
+
 /**
  * Cherche le produit du catalogue qui correspond le mieux à une désignation.
  * Limité au fournisseur si connu. Renvoie null si la correspondance est trop faible.
@@ -64,30 +110,20 @@ export function meilleurProduit(
   designation: string,
   fournisseur: string | null,
 ): Produit | null {
-  const base = fournisseur
-    ? produitsDuFournisseur(fournisseur)
-    : catalogue.produits;
-  const mots = normaliser(designation)
-    .split(/\s+/)
-    .filter((m) => m.length > 2);
-  if (mots.length === 0) return null;
+  const q = motsSignificatifs(designation);
+  if (q.length === 0) return null;
 
   let meilleur: Produit | null = null;
   let meilleurScore = 0;
-  for (const p of base) {
-    const cible = p.nom_recherche;
-    let score = 0;
-    for (const m of mots) {
-      if (cible.includes(m)) score++;
-    }
-    const ratio = score / mots.length;
-    if (ratio > meilleurScore) {
-      meilleurScore = ratio;
-      meilleur = p;
+  for (const { produit, mots } of MOTS_CATALOGUE) {
+    if (fournisseur && produit.fournisseur !== fournisseur) continue;
+    const s = scoreMots(q, mots);
+    if (s > meilleurScore) {
+      meilleurScore = s;
+      meilleur = produit;
     }
   }
-  // au moins la moitié des mots significatifs doivent correspondre
-  return meilleurScore >= 0.5 ? meilleur : null;
+  return meilleurScore >= SEUIL_NOM ? meilleur : null;
 }
 
 /** Transforme une facture lue en analyse complète (rapprochement + écarts). */
