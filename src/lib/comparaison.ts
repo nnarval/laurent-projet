@@ -1,6 +1,11 @@
 import type { Produit } from "./catalogue";
 
-export type Statut = "conforme" | "surfacture" | "moins_cher" | "inconnu";
+export type Statut =
+  | "conforme"
+  | "surfacture"
+  | "moins_cher"
+  | "ecart_suspect"
+  | "inconnu";
 
 /** Une ligne saisie depuis la facture du fournisseur. */
 export interface LigneFacture {
@@ -28,6 +33,13 @@ export interface ResultatLigne {
 
 /** Tolérance par défaut : 1 % pour absorber les arrondis. */
 export const TOLERANCE_DEFAUT = 0.01;
+
+/**
+ * Au-delà de ce rapport entre prix facturé et prix de référence, l'écart est
+ * jugé aberrant (presque toujours une différence d'unité : prix au carton vs à
+ * la pièce). On ne le compte alors pas comme une vraie surfacturation.
+ */
+export const SEUIL_RATIO = 4;
 
 export function comparerLigne(
   ligne: LigneFacture,
@@ -59,9 +71,13 @@ export function comparerLigne(
   const ecartUnitaire = arrondi(prixFacture - prixReference);
   const ecartPct = prixReference !== 0 ? ecartUnitaire / prixReference : null;
   const surcout = arrondi(ecartUnitaire * quantite);
+  const ratio = prixReference > 0 ? prixFacture / prixReference : null;
 
   let statut: Statut;
-  if (ecartPct != null && Math.abs(ecartPct) <= tolerance) {
+  if (ratio != null && (ratio > SEUIL_RATIO || ratio < 1 / SEUIL_RATIO)) {
+    // écart aberrant : très probablement une différence d'unité, pas une vraie dérive
+    statut = "ecart_suspect";
+  } else if (ecartPct != null && Math.abs(ecartPct) <= tolerance) {
     statut = "conforme";
   } else if (ecartUnitaire > 0) {
     statut = "surfacture";
@@ -78,6 +94,7 @@ export interface Synthese {
   nbConformes: number;
   nbSurfactures: number;
   nbMoinsChers: number;
+  nbSuspects: number; // écarts aberrants (différence d'unité probable)
   nbInconnus: number;
   surcoutTotal: number; // somme des surcoûts positifs (ce que le resto paie en trop)
   economieTotale: number; // somme des écarts négatifs (en valeur absolue)
@@ -89,6 +106,7 @@ export function synthetiser(resultats: ResultatLigne[]): Synthese {
     nbConformes: 0,
     nbSurfactures: 0,
     nbMoinsChers: 0,
+    nbSuspects: 0,
     nbInconnus: 0,
     surcoutTotal: 0,
     economieTotale: 0,
@@ -105,6 +123,9 @@ export function synthetiser(resultats: ResultatLigne[]): Synthese {
       case "moins_cher":
         s.nbMoinsChers++;
         if (r.surcout && r.surcout < 0) s.economieTotale += Math.abs(r.surcout);
+        break;
+      case "ecart_suspect":
+        s.nbSuspects++;
         break;
       default:
         s.nbInconnus++;

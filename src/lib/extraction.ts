@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 /** Une ligne telle que lue sur la facture PDF. */
 export interface LigneExtraite {
+  code: string | null;
   designation: string;
   quantite: number | null;
   unite: string | null;
@@ -33,6 +34,7 @@ const SCHEMA = {
         type: "object",
         additionalProperties: false,
         properties: {
+          code: { anyOf: [{ type: "string" }, { type: "null" }] },
           designation: { type: "string" },
           quantite: { anyOf: [{ type: "number" }, { type: "null" }] },
           unite: { anyOf: [{ type: "string" }, { type: "null" }] },
@@ -40,6 +42,7 @@ const SCHEMA = {
           montant_ht: { anyOf: [{ type: "number" }, { type: "null" }] },
         },
         required: [
+          "code",
           "designation",
           "quantite",
           "unite",
@@ -56,6 +59,7 @@ const INSTRUCTIONS = `Tu es un assistant qui lit des factures de fournisseurs de
 Extrait TOUTES les lignes de produits de cette facture.
 
 Pour chaque ligne produit, renvoie :
+- code : le code / référence article du produit (colonne code de la facture), ou null
 - designation : le libellé du produit exactement comme écrit sur la facture
 - quantite : la quantité facturée (nombre), ou null
 - unite : l'unité (kg, L, pièce, carton, colis...), ou null

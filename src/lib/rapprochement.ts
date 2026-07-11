@@ -24,6 +24,18 @@ export interface FactureAnalysee {
   synthese: Synthese;
 }
 
+/** Index des produits par code (le code est unique dans le catalogue). */
+const PAR_CODE = new Map<string, Produit>();
+for (const p of catalogue.produits) {
+  if (p.code) PAR_CODE.set(String(p.code).trim(), p);
+}
+
+/** Rapprochement certain par code article, si présent dans le catalogue. */
+export function produitParCode(code: string | null | undefined): Produit | null {
+  if (!code) return null;
+  return PAR_CODE.get(String(code).trim()) ?? null;
+}
+
 /** Tente de rattacher le nom lu sur la facture à un fournisseur du catalogue. */
 export function detecterFournisseur(nom: string | null): string | null {
   if (!nom) return null;
@@ -87,7 +99,9 @@ export function analyserFacture(
 
   const lignes: LigneFacture[] = facture.lignes.map((l, i) => ({
     id: `${fichier}-${i}`,
-    produit: meilleurProduit(l.designation, fournisseurCatalogue),
+    // 1) rapprochement certain par code, 2) sinon rapprochement par nom
+    produit:
+      produitParCode(l.code) ?? meilleurProduit(l.designation, fournisseurCatalogue),
     libelleSaisi: l.designation,
     prixFacture: l.prix_unitaire_ht,
     quantite: l.quantite,

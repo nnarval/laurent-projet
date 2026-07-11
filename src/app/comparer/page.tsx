@@ -239,20 +239,29 @@ function BadgeEcart({
   if (statut === "inconnu") {
     return <span className="text-xs text-slate-300">—</span>;
   }
-  const styles: Record<Exclude<Statut, "inconnu">, string> = {
+  if (statut === "ecart_suspect") {
+    return (
+      <span
+        className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700"
+        title="Écart aberrant, probablement une différence d'unité (ex : prix au carton vs à la pièce)."
+      >
+        Unité à vérifier
+      </span>
+    );
+  }
+  const styles = {
     conforme: "bg-emerald-100 text-emerald-700",
     surfacture: "bg-red-100 text-red-700",
     moins_cher: "bg-sky-100 text-sky-700",
-  };
-  const libelles: Record<Exclude<Statut, "inconnu">, string> = {
+  } as const;
+  const libelles = {
     conforme: "Conforme",
     surfacture: "Surfacturé",
     moins_cher: "Moins cher",
-  };
-  const s = statut as Exclude<Statut, "inconnu">;
+  } as const;
   return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${styles[s]}`}>
-      {libelles[s]}
+    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${styles[statut]}`}>
+      {libelles[statut]}
       {statut !== "conforme" && ecartPct != null ? ` ${pourcent(ecartPct)}` : ""}
       {statut === "surfacture" && surcout ? ` · ${euro(surcout)}` : ""}
     </span>

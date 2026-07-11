@@ -282,15 +282,22 @@ function BadgeEcart({
   if (statut === "inconnu") {
     return <span className="text-xs text-slate-300">non rapproché</span>;
   }
-  const styles: Record<Exclude<StatutLigne, "inconnu">, string> = {
+  if (statut === "ecart_suspect") {
+    return (
+      <span className="text-xs text-amber-600" title="Écart aberrant, probablement une différence d'unité (ex : prix au carton vs à la pièce).">
+        unité à vérifier
+      </span>
+    );
+  }
+  const styles = {
     conforme: "text-emerald-600",
     surfacture: "text-red-600 font-semibold",
     moins_cher: "text-sky-600",
-  };
-  const s = statut as Exclude<StatutLigne, "inconnu">;
-  if (statut === "conforme") return <span className={`text-xs ${styles[s]}`}>✓ conforme</span>;
+  } as const;
+  if (statut === "conforme")
+    return <span className={`text-xs ${styles.conforme}`}>✓ conforme</span>;
   return (
-    <span className={`text-xs ${styles[s]}`}>
+    <span className={`text-xs ${styles[statut]}`}>
       {pourcent(ecartPct)}
       {statut === "surfacture" && surcout ? ` · ${euro(surcout)}` : ""}
     </span>
