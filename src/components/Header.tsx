@@ -13,7 +13,8 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-1 text-sm font-medium">
-          <NavLink href="/comparer">Comparer une facture</NavLink>
+          <NavLink href="/analyser">Analyser des factures</NavLink>
+          <NavLink href="/comparer">Saisie manuelle</NavLink>
           <NavLink href="/catalogue">Catalogue</NavLink>
         </nav>
       </div>

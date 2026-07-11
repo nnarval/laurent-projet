@@ -10,7 +10,7 @@ export default function Home() {
     <div className="mx-auto max-w-5xl px-6 py-14">
       <section className="text-center">
         <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-          Version 1 · saisie manuelle
+          Lecture automatique des factures PDF
         </span>
         <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           Vos fournisseurs vous facturent-ils
@@ -24,10 +24,10 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/comparer"
+            href="/analyser"
             className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-600 px-7 text-base font-semibold text-white transition-colors hover:bg-emerald-700"
           >
-            Comparer une facture
+            Analyser des factures
           </Link>
           <Link
             href="/catalogue"
@@ -64,24 +64,24 @@ export default function Home() {
       <section className="mt-10 grid gap-4 sm:grid-cols-3">
         <Etape
           num="1"
-          titre="Choisissez le fournisseur"
-          texte="Sélectionnez le fournisseur concerné par la facture à contrôler."
+          titre="Déposez vos factures PDF"
+          texte="Glissez plusieurs factures d'un coup — l'IA les lit automatiquement, ligne par ligne."
         />
         <Etape
           num="2"
-          titre="Saisissez les lignes"
-          texte="Pour chaque produit, indiquez le prix facturé. On le rapproche de votre prix négocié."
+          titre="Rapprochement automatique"
+          texte="Chaque produit est comparé à votre prix négocié, sans aucune saisie manuelle."
         />
         <Etape
           num="3"
-          titre="Lisez les écarts"
-          texte="Le rapport met en évidence les surfacturations et le surcoût total en euros."
+          titre="Bilan consolidé"
+          texte="Un rapport global met en évidence les surfacturations et le surcoût total en euros."
         />
       </section>
 
       <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-slate-400">
-        Prochaine étape&nbsp;: lecture automatique des factures PDF par IA, pour ne
-        plus rien saisir à la main.
+        Fruits &amp; légumes&nbsp;: prochaine étape, la comparaison à la mercuriale
+        hebdomadaire de vos fournisseurs.
       </p>
     </div>
   );
